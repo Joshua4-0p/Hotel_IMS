@@ -9,7 +9,8 @@ import { useToast } from '../context/ToastContext';
 import { toKey } from '../lib/availability';
 
 // ----- constants -----
-const CLEANING_FEE = 45;
+const CLEANING_FEE = 27000;
+const fmtXAF = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'XAF', maximumFractionDigits: 0 });
 const TAX_RATE     = 0.12;
 
 // ----- helpers -----
@@ -55,11 +56,9 @@ function StepIndicator({ step }: { step: Step }) {
       {labels.map((label, i) => (
         <div key={i} className="flex items-center gap-2">
           <span
-            className="w-5 h-5 rounded-full flex items-center justify-center label shrink-0 transition-colors"
-            style={{
-              background: i <= active ? '#141414' : '#E3E3E3',
-              color:      i <= active ? '#ffffff' : '#585858',
-            }}
+            className={`w-5 h-5 rounded-full flex items-center justify-center label shrink-0 transition-colors ${
+              i <= active ? 'bg-brand-black text-white' : 'bg-[#E3E3E3] text-text-secondary'
+            }`}
           >
             {i < active ? <Check size={10} /> : i + 1}
           </span>
@@ -199,7 +198,7 @@ export function BookingPanel({ room }: { room: Room }) {
             className="flex flex-col gap-5"
           >
             <div>
-              <span className="display-md text-[#000000]">${room.price}</span>
+              <span className="display-md text-[#000000]">{fmtXAF(room.price)}</span>
               <span className="body-md text-[#585858]">/night</span>
             </div>
 
@@ -272,15 +271,15 @@ export function BookingPanel({ room }: { room: Room }) {
               <p className="heading-md text-[#000000]">Price Summary</p>
               <div className="flex flex-col gap-2.5 border-b border-[#E3E3E3] pb-3">
                 <PriceLine
-                  label={`$${room.price} × ${nights} night${nights > 1 ? 's' : ''}`}
-                  value={`$${subtotal.toLocaleString()}`}
+                  label={`${fmtXAF(room.price)} × ${nights} night${nights > 1 ? 's' : ''}`}
+                  value={fmtXAF(subtotal)}
                 />
-                <PriceLine label="Cleaning fee" value={`$${CLEANING_FEE}`} />
-                <PriceLine label={`Taxes (${Math.round(TAX_RATE * 100)}%)`} value={`$${taxes.toLocaleString()}`} />
+                <PriceLine label="Cleaning fee" value={fmtXAF(CLEANING_FEE)} />
+                <PriceLine label={`Taxes (${Math.round(TAX_RATE * 100)}%)`} value={fmtXAF(taxes)} />
               </div>
               <div className="flex items-center justify-between body-md font-medium text-[#000000]">
                 <span>Total</span>
-                <span>${total.toLocaleString()}</span>
+                <span>{fmtXAF(total)}</span>
               </div>
             </div>
 
@@ -377,7 +376,7 @@ export function BookingPanel({ room }: { room: Room }) {
               <div className="h-px bg-[#E3E3E3] my-0.5" />
               <div className="flex items-center justify-between body-md font-medium">
                 <span className="text-[#585858]">Total</span>
-                <span className="text-[#000000]">${total.toLocaleString()}</span>
+                <span className="text-[#000000]">{fmtXAF(total)}</span>
               </div>
             </div>
 

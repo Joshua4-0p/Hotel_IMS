@@ -1,4 +1,5 @@
 import { useState } from 'react';
+const fmtXAF = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'XAF', maximumFractionDigits: 0 });
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BedDouble, Heart, Bell, CalendarDays, Users, Ban, ExternalLink, Inbox, BookOpen } from 'lucide-react';
@@ -136,7 +137,7 @@ function BookingsTab() {
 
             <div className="flex items-center justify-between pt-2 border-t border-[#E3E3E3]">
               <span className="body-md font-semibold text-[#000000]">
-                ${b.totalPrice.toLocaleString()}
+                {fmtXAF(b.totalPrice)}
               </span>
               <div className="flex items-center gap-2">
                 <Link
@@ -229,7 +230,7 @@ function FavoritesTab() {
             </div>
             <div className="flex items-center justify-between">
               <span className="body-md font-semibold text-[#000000]">
-                ${room.price}<span className="body-sm text-[#585858] font-normal">/night</span>
+                {fmtXAF(room.price)}<span className="body-sm text-text-secondary font-normal">/night</span>
               </span>
               <Link
                 to={`/rooms/${room.id}`}

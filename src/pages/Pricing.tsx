@@ -5,21 +5,23 @@ import { Btn } from '../components/Btn';
 import { RevealOnScroll, StaggerContainer, StaggerItem } from '../components/RevealOnScroll';
 import { faqItems } from '../data/faq';
 
+const fmtXAF = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'XAF', maximumFractionDigits: 0 });
+
 const plans = [
   {
     name: 'Standard',
-    price: 199,
+    price: 120000,
     features: ['Queen bed', '28 m²', 'Wi-Fi', 'Tea/Coffee Maker', 'Safe', 'Hair Dryer'],
   },
   {
     name: 'Deluxe',
-    price: 279,
+    price: 168000,
     popular: true,
     features: ['King bed', '32 m²', 'Wi-Fi', 'Tea/Coffee Maker', 'Safe', 'Private Balcony', 'Mini Bar', 'Flat-screen TV'],
   },
   {
     name: 'Suite',
-    price: 499,
+    price: 300000,
     features: ['King bed', '55 m²', 'Wi-Fi', 'Mini Bar', 'Private Balcony', 'Living Area', 'Marble Bathroom', 'Butler Service'],
   },
 ];
@@ -61,7 +63,7 @@ export function Pricing() {
                     </h2>
                     <div className="mt-3 flex items-end gap-1">
                       <span className="display-md" style={{ color: plan.popular ? '#ffffff' : '#000000' }}>
-                        ${plan.price}
+                        {fmtXAF(plan.price)}
                       </span>
                       <span className="body-md pb-1" style={{ color: plan.popular ? 'rgba(255,255,255,0.6)' : '#585858' }}>
                         /night

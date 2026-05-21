@@ -26,7 +26,7 @@ const todayStr    = todayPlusDays(0);
 const tomorrowStr = todayPlusDays(1);
 
 function fmtCurrency(n: number) {
-  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+  return n.toLocaleString('en-US', { style: 'currency', currency: 'XAF', maximumFractionDigits: 0 });
 }
 
 // ─── SearchBar ───────────────────────────────────────────────────────────────

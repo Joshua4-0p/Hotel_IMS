@@ -1,4 +1,5 @@
 import { useState } from 'react';
+const fmtXAF = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'XAF', maximumFractionDigits: 0 });
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Thumbs } from 'swiper/modules';
@@ -164,7 +165,7 @@ export function RoomDetail() {
                   ) : (
                     <div className="flex flex-col gap-5">
                       <div>
-                        <span className="display-md text-text-primary">${room.price}</span>
+                        <span className="display-md text-text-primary">{fmtXAF(room.price)}</span>
                         <span className="body-md text-text-secondary">/night</span>
                       </div>
                       <div className="rounded-[0.5rem] border border-[#E3E3E3] bg-[#F8F8F8] p-5 flex flex-col gap-3 text-center">
@@ -216,7 +217,7 @@ export function RoomDetail() {
                     <span className="label text-[#585858]">{r.category}</span>
                     <h3 className="heading-md text-[#000000]">{r.name}</h3>
                     <div className="flex items-center justify-between mt-2">
-                      <span className="body-md font-medium">${r.price}<span className="body-sm text-[#585858]">/night</span></span>
+                      <span className="body-md font-medium">{fmtXAF(r.price)}<span className="body-sm text-text-secondary">/night</span></span>
                       <Btn to={`/rooms/${r.id}`} variant="outline" size="sm">View</Btn>
                     </div>
                   </div>

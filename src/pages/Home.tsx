@@ -170,7 +170,7 @@ export function Home() {
                     <p className="body-sm text-[#585858] line-clamp-2">{room.description}</p>
                     <div className="flex items-center justify-between pt-2">
                       <span className="body-md font-medium text-[#000000]">
-                        ${room.price}<span className="body-sm text-[#585858]">/night</span>
+                        {(room.price).toLocaleString('en-US', { style: 'currency', currency: 'XAF', maximumFractionDigits: 0 })}<span className="body-sm text-text-secondary">/night</span>
                       </span>
                       <Btn to={`/rooms/${room.id}`} variant="outline" size="sm">
                         View Details
