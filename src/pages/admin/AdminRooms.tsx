@@ -36,15 +36,16 @@ const CATEGORY_STYLES: Record<string, string> = {
 const roomSchema = z.object({
   name:        z.string().min(2, 'Name is required'),
   category:    z.enum(['Standard', 'Deluxe', 'Suite']),
-  price:       z.number().min(1, 'Price is required'),
-  capacity:    z.number().min(1).max(20),
+  price:       z.coerce.number().min(1, 'Price is required'),
+  capacity:    z.coerce.number().min(1).max(20),
   bedType:     z.string().min(1, 'Bed type is required'),
   size:        z.string().min(1, 'Size is required'),
   description: z.string().min(10, 'Description is required'),
   amenities:   z.string().min(1, 'Add at least one amenity'),
 });
 
-type RoomFormValues = z.infer<typeof roomSchema>;
+type RoomFormInput  = z.input<typeof roomSchema>;
+type RoomFormValues = z.output<typeof roomSchema>;
 
 // ── Edit Room Dialog ───────────────────────────────────────────────────────────
 function EditRoomDialog({
@@ -53,7 +54,7 @@ function EditRoomDialog({
   const { updateRoom } = useAdminData();
   const [submitting, setSubmitting] = useState(false);
 
-  const form = useForm<RoomFormValues>({
+  const form = useForm<RoomFormInput, unknown, RoomFormValues>({
     resolver: zodResolver(roomSchema),
     defaultValues: room ? {
       name:        room.name,
@@ -139,7 +140,9 @@ function EditRoomDialog({
               <FormField control={form.control} name="price" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Price / night (XAF)</FormLabel>
-                  <FormControl><Input type="number" min={0} {...field} /></FormControl>
+                  <FormControl>
+                    <Input type="number" min={0} {...field} value={field.value as number} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
@@ -149,7 +152,9 @@ function EditRoomDialog({
               <FormField control={form.control} name="capacity" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Capacity</FormLabel>
-                  <FormControl><Input type="number" min={1} {...field} /></FormControl>
+                  <FormControl>
+                    <Input type="number" min={1} {...field} value={field.value as number} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )} />

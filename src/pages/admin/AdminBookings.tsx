@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { type ColumnDef } from '@tanstack/react-table';
 import { Plus, Filter } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
@@ -52,7 +52,7 @@ const bookingSchema = z.object({
   roomId:     z.string().min(1, 'Select a room'),
   checkIn:    z.string().min(1, 'Check-in date required'),
   checkOut:   z.string().min(1, 'Check-out date required'),
-  guests:     z.number().min(1).max(10),
+  guests:     z.coerce.number().min(1).max(10),
   source:     z.enum(['online', 'walk_in', 'phone']),
   notes:      z.string().optional(),
 }).refine((d) => d.checkOut > d.checkIn, {
@@ -60,14 +60,16 @@ const bookingSchema = z.object({
   path: ['checkOut'],
 });
 
-type BookingFormValues = z.infer<typeof bookingSchema>;
+// Use input type for TFieldValues so coerce fields are accepted as strings from the DOM
+type BookingFormInput  = z.input<typeof bookingSchema>;
+type BookingFormValues = z.output<typeof bookingSchema>;
 
 // ── New Booking Dialog ─────────────────────────────────────────────────────────
 function NewBookingDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { allRooms, addAdminBooking } = useAdminData();
   const [submitting, setSubmitting]   = useState(false);
 
-  const form = useForm<BookingFormValues>({
+  const form = useForm<BookingFormInput, unknown, BookingFormValues>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
       guestName: '', guestEmail: '', guestPhone: '',
@@ -110,8 +112,11 @@ function NewBookingDialog({ open, onClose }: { open: boolean; onClose: () => voi
     onClose();
   }
 
-  const watched = form.watch(['roomId', 'checkIn', 'checkOut']);
-  const preview = calcTotal(watched[0], watched[1], watched[2]);
+  const [watchedRoomId, watchedCheckIn, watchedCheckOut] = useWatch({
+    control: form.control,
+    name: ['roomId', 'checkIn', 'checkOut'],
+  });
+  const preview = calcTotal(watchedRoomId ?? '', watchedCheckIn ?? '', watchedCheckOut ?? '');
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -190,7 +195,9 @@ function NewBookingDialog({ open, onClose }: { open: boolean; onClose: () => voi
               <FormField control={form.control} name="guests" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Guests</FormLabel>
-                  <FormControl><Input type="number" min={1} max={10} {...field} /></FormControl>
+                  <FormControl>
+                    <Input type="number" min={1} max={10} {...field} value={field.value as number} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
@@ -378,6 +385,7 @@ export function AdminBookings() {
           { key: 'cancelled',   label: 'Cancelled' },
         ].map(({ key, label }) => (
           <button
+            type="button"
             key={key}
             onClick={() => setStatusFilter(key)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
