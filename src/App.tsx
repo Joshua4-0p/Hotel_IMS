@@ -43,6 +43,10 @@ import { AdminServices } from './pages/admin/AdminServices';
 import { AdminBlog } from './pages/admin/AdminBlog';
 import { AdminGallery } from './pages/admin/AdminGallery';
 import { AdminTeam } from './pages/admin/AdminTeam';
+import { AdminFaq } from './pages/admin/AdminFaq';
+import { AdminReviews } from './pages/admin/AdminReviews';
+import { AdminMessages } from './pages/admin/AdminMessages';
+import { AdminReports } from './pages/admin/AdminReports';
 import { AdminPlaceholder } from './pages/admin/AdminPlaceholder';
 
 const pageVariants = {
@@ -160,10 +164,10 @@ function AppRoutes() {
         { path: 'gallery',                element: <AdminGallery /> },
         { path: 'services',               element: <AdminServices /> },
         { path: 'team',                   element: <AdminTeam /> },
-        { path: 'faq',                    element: <AdminPlaceholder title="FAQ" /> },
-        { path: 'reviews',                element: <AdminPlaceholder title="Reviews" /> },
-        { path: 'messages',               element: <AdminPlaceholder title="Messages" /> },
-        { path: 'reports',                element: <AdminPlaceholder title="Reports" /> },
+        { path: 'faq',                    element: <AdminFaq /> },
+        { path: 'reviews',                element: <AdminReviews /> },
+        { path: 'messages',               element: <AdminMessages /> },
+        { path: 'reports',                element: <AdminReports /> },
         { path: 'users',                  element: <AdminPlaceholder title="Users" /> },
         { path: 'settings',               element: <AdminPlaceholder title="Settings" /> },
       ],
