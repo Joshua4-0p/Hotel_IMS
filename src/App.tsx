@@ -4,8 +4,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { ProtectedAdminRoute } from './components/ProtectedAdminRoute';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import { AdminDataProvider } from './context/AdminDataContext';
 import { Home } from './pages/Home';
 import { About } from './pages/About';
 import { Team } from './pages/Team';
@@ -25,6 +27,15 @@ import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
 import { Dashboard } from './pages/Dashboard';
 import { Profile } from './pages/Profile';
+// Admin
+import { AdminLogin } from './pages/admin/AdminLogin';
+import { AdminLayout } from './pages/admin/AdminLayout';
+import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { AdminBookings } from './pages/admin/AdminBookings';
+import { AdminBookingDetail } from './pages/admin/AdminBookingDetail';
+import { AdminRooms } from './pages/admin/AdminRooms';
+import { AdminRoomDetail } from './pages/admin/AdminRoomDetail';
+import { AdminPlaceholder } from './pages/admin/AdminPlaceholder';
 
 const pageVariants = {
   initial: { opacity: 0, y: 20 },
@@ -59,16 +70,26 @@ function LogoutRoute() {
   return null;
 }
 
-// Routes that hide the footer
+// Routes that hide the footer / main navbar (auth + all admin pages)
 const noFooterRoutes = ['/login', '/signup'];
-// Routes that hide the main site navbar (auth pages render their own minimal header)
 const noNavbarRoutes = ['/login', '/signup'];
+
+// ── Admin route tree (nested layout with Outlet) ───────────────────────────────
+function AdminRouteTree() {
+  return (
+    <ProtectedAdminRoute>
+      <AdminDataProvider>
+        <AdminLayout />
+      </AdminDataProvider>
+    </ProtectedAdminRoute>
+  );
+}
 
 function AppRoutes() {
   const location = useLocation();
 
   const element = useRoutes([
-    // Public routes
+    // ── Public routes ────────────────────────────────────────────────────────
     { path: '/',                   element: <Home /> },
     { path: '/about-us',           element: <About /> },
     { path: '/our-team',           element: <Team /> },
@@ -84,12 +105,12 @@ function AppRoutes() {
     { path: '/blog/:slug',         element: <BlogPost /> },
     { path: '/contact-us',         element: <Contact /> },
 
-    // Auth routes (no navbar/footer)
+    // ── Auth routes (no navbar/footer) ───────────────────────────────────────
     { path: '/login',              element: <Login /> },
     { path: '/signup',             element: <Signup /> },
     { path: '/logout',             element: <LogoutRoute /> },
 
-    // Protected routes
+    // ── Guest protected routes ───────────────────────────────────────────────
     {
       path: '/dashboard',
       element: <ProtectedRoute><Navigate to="/dashboard/bookings" replace /></ProtectedRoute>,
@@ -111,7 +132,35 @@ function AppRoutes() {
       element: <ProtectedRoute><Profile /></ProtectedRoute>,
     },
 
-    // Redirects + fallback
+    // ── Admin routes (own layout shell, no main navbar/footer) ───────────────
+    { path: '/admin/login', element: <AdminLogin /> },
+    {
+      path: '/admin',
+      element: <AdminRouteTree />,
+      children: [
+        { index: true,                    element: <AdminDashboard /> },
+        { path: 'bookings',               element: <AdminBookings /> },
+        { path: 'bookings/:id',           element: <AdminBookingDetail /> },
+        { path: 'calendar',               element: <AdminPlaceholder title="Calendar" /> },
+        { path: 'rooms',                  element: <AdminRooms /> },
+        { path: 'rooms/:id',              element: <AdminRoomDetail /> },
+        { path: 'pricing',               element: <AdminPlaceholder title="Pricing" /> },
+        { path: 'availability',           element: <AdminPlaceholder title="Availability" /> },
+        { path: 'guests',                 element: <AdminPlaceholder title="Guest CRM" /> },
+        { path: 'blog',                   element: <AdminPlaceholder title="Blog" /> },
+        { path: 'gallery',                element: <AdminPlaceholder title="Gallery" /> },
+        { path: 'services',               element: <AdminPlaceholder title="Services" /> },
+        { path: 'team',                   element: <AdminPlaceholder title="Team" /> },
+        { path: 'faq',                    element: <AdminPlaceholder title="FAQ" /> },
+        { path: 'reviews',                element: <AdminPlaceholder title="Reviews" /> },
+        { path: 'messages',               element: <AdminPlaceholder title="Messages" /> },
+        { path: 'reports',                element: <AdminPlaceholder title="Reports" /> },
+        { path: 'users',                  element: <AdminPlaceholder title="Users" /> },
+        { path: 'settings',               element: <AdminPlaceholder title="Settings" /> },
+      ],
+    },
+
+    // ── Redirects + fallback ─────────────────────────────────────────────────
     { path: '/accomodation', element: <Navigate to="/rooms" replace /> },
     { path: '*',             element: <NotFound /> },
   ]);
@@ -126,9 +175,15 @@ function AppRoutes() {
 }
 
 function AppShell() {
-  const location   = useLocation();
-  const showFooter = !noFooterRoutes.includes(location.pathname);
-  const showNavbar = !noNavbarRoutes.includes(location.pathname);
+  const location      = useLocation();
+  const isAdminRoute  = location.pathname.startsWith('/admin');
+  const showFooter    = !isAdminRoute && !noFooterRoutes.includes(location.pathname);
+  const showNavbar    = !isAdminRoute && !noNavbarRoutes.includes(location.pathname);
+
+  if (isAdminRoute) {
+    // Admin routes render their own layout shell — no outer wrapping
+    return <AppRoutes />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col">

@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 
+export type AdminRole = 'super_admin' | 'manager' | 'front_desk';
+
 export interface User {
   id: string;
   name: string;
@@ -7,6 +9,7 @@ export interface User {
   location: string;
   country: string;
   phone: string;
+  role?: AdminRole;
 }
 
 export interface Booking {
@@ -44,12 +47,15 @@ interface AuthContextType {
   bookings: Booking[];
   notifications: Notification[];
   isAuthenticated: boolean;
+  isAdmin: boolean;
+  adminRole: AdminRole | null;
   unreadCount: number;
   login: (email: string, password: string) => void;
   loginWithGoogle: () => void;
   signup: (data: SignupData) => void;
   signupWithGoogle: () => void;
   logout: () => void;
+  adminLogin: (email: string, password: string) => boolean;
   updateProfile: (data: Partial<User>) => void;
   addToFavorites: (roomId: string) => void;
   removeFromFavorites: (roomId: string) => void;
@@ -58,6 +64,13 @@ interface AuthContextType {
   markNotificationRead: (id: string) => void;
   markAllRead: () => void;
 }
+
+// ── Mock admin credentials ─────────────────────────────────────────────────────
+const MOCK_ADMINS: { email: string; password: string; name: string; role: AdminRole }[] = [
+  { email: 'admin@lodr.com',   password: 'admin2024',   name: 'Kwame Asante',  role: 'super_admin' },
+  { email: 'manager@lodr.com', password: 'manager2024', name: 'Amara Nkosi',   role: 'manager'     },
+  { email: 'desk@lodr.com',    password: 'desk2024',    name: 'Brice Tagne',   role: 'front_desk'  },
+];
 
 const DEFAULT_NOTIFICATIONS: Notification[] = [
   {
@@ -120,6 +133,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user, favorites, bookings, notifications]);
 
   const isAuthenticated = user !== null;
+  const isAdmin         = !!user?.role;
+  const adminRole       = user?.role ?? null;
   const unreadCount     = notifications.filter((n) => !n.read).length;
 
   function initSession(u: User, fresh: boolean) {
@@ -151,6 +166,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function signupWithGoogle() {
     const u = makeUser({ email: 'guest@gmail.com', name: 'Google Guest' });
     initSession(u, true);
+  }
+
+  function adminLogin(email: string, password: string): boolean {
+    const admin = MOCK_ADMINS.find((a) => a.email === email && a.password === password);
+    if (!admin) return false;
+    const u = makeUser({ email: admin.email, name: admin.name, role: admin.role });
+    setUser(u);
+    setFavorites([]);
+    setBookings([]);
+    setNotifications([]);
+    return true;
   }
 
   function logout() {
@@ -211,9 +237,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user, favorites, bookings, notifications,
-        isAuthenticated, unreadCount,
+        isAuthenticated, isAdmin, adminRole, unreadCount,
         login, loginWithGoogle, signup, signupWithGoogle,
-        logout, updateProfile,
+        logout, adminLogin, updateProfile,
         addToFavorites, removeFromFavorites,
         addBooking, cancelBooking,
         markNotificationRead, markAllRead,
@@ -229,3 +255,6 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth must be used inside AuthProvider');
   return ctx;
 }
+
+/** Convenience — export mock admin credentials for the login page demo hint */
+export { MOCK_ADMINS };
