@@ -40,6 +40,9 @@ import { AdminGuestDetail } from './pages/admin/AdminGuestDetail';
 import { AdminCalendar } from './pages/admin/AdminCalendar';
 import { AdminPricing } from './pages/admin/AdminPricing';
 import { AdminServices } from './pages/admin/AdminServices';
+import { AdminBlog } from './pages/admin/AdminBlog';
+import { AdminGallery } from './pages/admin/AdminGallery';
+import { AdminTeam } from './pages/admin/AdminTeam';
 import { AdminPlaceholder } from './pages/admin/AdminPlaceholder';
 
 const pageVariants = {
@@ -153,10 +156,10 @@ function AppRoutes() {
         { path: 'availability',           element: <AdminCalendar /> },
         { path: 'guests',                 element: <AdminGuests /> },
         { path: 'guests/:id',             element: <AdminGuestDetail /> },
-        { path: 'blog',                   element: <AdminPlaceholder title="Blog" /> },
-        { path: 'gallery',                element: <AdminPlaceholder title="Gallery" /> },
+        { path: 'blog',                   element: <AdminBlog /> },
+        { path: 'gallery',                element: <AdminGallery /> },
         { path: 'services',               element: <AdminServices /> },
-        { path: 'team',                   element: <AdminPlaceholder title="Team" /> },
+        { path: 'team',                   element: <AdminTeam /> },
         { path: 'faq',                    element: <AdminPlaceholder title="FAQ" /> },
         { path: 'reviews',                element: <AdminPlaceholder title="Reviews" /> },
         { path: 'messages',               element: <AdminPlaceholder title="Messages" /> },
