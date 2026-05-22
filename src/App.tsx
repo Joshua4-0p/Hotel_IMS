@@ -47,7 +47,8 @@ import { AdminFaq } from './pages/admin/AdminFaq';
 import { AdminReviews } from './pages/admin/AdminReviews';
 import { AdminMessages } from './pages/admin/AdminMessages';
 import { AdminReports } from './pages/admin/AdminReports';
-import { AdminPlaceholder } from './pages/admin/AdminPlaceholder';
+import { AdminUsers } from './pages/admin/AdminUsers';
+import { AdminSettings } from './pages/admin/AdminSettings';
 
 const pageVariants = {
   initial: { opacity: 0, y: 20 },
@@ -168,8 +169,8 @@ function AppRoutes() {
         { path: 'reviews',                element: <AdminReviews /> },
         { path: 'messages',               element: <AdminMessages /> },
         { path: 'reports',                element: <AdminReports /> },
-        { path: 'users',                  element: <AdminPlaceholder title="Users" /> },
-        { path: 'settings',               element: <AdminPlaceholder title="Settings" /> },
+        { path: 'users',                  element: <AdminUsers /> },
+        { path: 'settings',               element: <AdminSettings /> },
       ],
     },
 
