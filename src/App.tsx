@@ -35,6 +35,11 @@ import { AdminBookings } from './pages/admin/AdminBookings';
 import { AdminBookingDetail } from './pages/admin/AdminBookingDetail';
 import { AdminRooms } from './pages/admin/AdminRooms';
 import { AdminRoomDetail } from './pages/admin/AdminRoomDetail';
+import { AdminGuests } from './pages/admin/AdminGuests';
+import { AdminGuestDetail } from './pages/admin/AdminGuestDetail';
+import { AdminCalendar } from './pages/admin/AdminCalendar';
+import { AdminPricing } from './pages/admin/AdminPricing';
+import { AdminServices } from './pages/admin/AdminServices';
 import { AdminPlaceholder } from './pages/admin/AdminPlaceholder';
 
 const pageVariants = {
@@ -141,15 +146,16 @@ function AppRoutes() {
         { index: true,                    element: <AdminDashboard /> },
         { path: 'bookings',               element: <AdminBookings /> },
         { path: 'bookings/:id',           element: <AdminBookingDetail /> },
-        { path: 'calendar',               element: <AdminPlaceholder title="Calendar" /> },
+        { path: 'calendar',               element: <AdminCalendar /> },
         { path: 'rooms',                  element: <AdminRooms /> },
         { path: 'rooms/:id',              element: <AdminRoomDetail /> },
-        { path: 'pricing',               element: <AdminPlaceholder title="Pricing" /> },
-        { path: 'availability',           element: <AdminPlaceholder title="Availability" /> },
-        { path: 'guests',                 element: <AdminPlaceholder title="Guest CRM" /> },
+        { path: 'pricing',                element: <AdminPricing /> },
+        { path: 'availability',           element: <AdminCalendar /> },
+        { path: 'guests',                 element: <AdminGuests /> },
+        { path: 'guests/:id',             element: <AdminGuestDetail /> },
         { path: 'blog',                   element: <AdminPlaceholder title="Blog" /> },
         { path: 'gallery',                element: <AdminPlaceholder title="Gallery" /> },
-        { path: 'services',               element: <AdminPlaceholder title="Services" /> },
+        { path: 'services',               element: <AdminServices /> },
         { path: 'team',                   element: <AdminPlaceholder title="Team" /> },
         { path: 'faq',                    element: <AdminPlaceholder title="FAQ" /> },
         { path: 'reviews',                element: <AdminPlaceholder title="Reviews" /> },
