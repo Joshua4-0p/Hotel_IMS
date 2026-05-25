@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  LayoutDashboard, CalendarDays, Calendar, BedDouble, Tag, Clock,
+  LayoutDashboard, CalendarDays, Calendar, BedDouble, Tag,
   Users, BookOpen, Image, Wrench, HelpCircle, Star,
   MessageSquare, BarChart2, Shield, Settings, LogOut,
   Bell, Moon, Sun, Menu, X, ChevronRight, UserCircle,
@@ -22,23 +22,23 @@ interface NavGroup { label: string; items: NavItem[] }
 
 function useNavGroups() {
   const { messages } = useAdminData();
-  const unreadMsgs   = messages.filter((m) => !m.read).length;
+  const { adminRole } = useAuth();
+  const unreadMsgs = messages.filter((m) => !m.read).length;
 
   const groups: NavGroup[] = [
     {
       label: 'Operations',
       items: [
-        { label: 'Dashboard', path: '/admin',             icon: <LayoutDashboard size={16} />, exact: true },
-        { label: 'Bookings',  path: '/admin/bookings',    icon: <CalendarDays    size={16} /> },
-        { label: 'Calendar',  path: '/admin/calendar',    icon: <Calendar        size={16} /> },
+        { label: 'Dashboard', path: '/admin',          icon: <LayoutDashboard size={16} />, exact: true },
+        { label: 'Bookings',  path: '/admin/bookings', icon: <CalendarDays    size={16} /> },
+        { label: 'Calendar',  path: '/admin/calendar', icon: <Calendar        size={16} /> },
       ],
     },
     {
       label: 'Property',
       items: [
-        { label: 'Rooms',        path: '/admin/rooms',        icon: <BedDouble size={16} /> },
-        { label: 'Pricing',      path: '/admin/pricing',      icon: <Tag       size={16} /> },
-        { label: 'Availability', path: '/admin/availability', icon: <Clock     size={16} /> },
+        { label: 'Rooms',            path: '/admin/rooms',    icon: <BedDouble size={16} /> },
+        { label: 'Rates & Discount', path: '/admin/pricing',  icon: <Tag       size={16} /> },
       ],
     },
     {
@@ -50,12 +50,12 @@ function useNavGroups() {
     {
       label: 'Content',
       items: [
-        { label: 'Blog',     path: '/admin/blog',     icon: <BookOpen size={16} /> },
-        { label: 'Gallery',  path: '/admin/gallery',  icon: <Image    size={16} /> },
-        { label: 'Services', path: '/admin/services', icon: <Wrench   size={16} /> },
+        { label: 'Blog',     path: '/admin/blog',     icon: <BookOpen   size={16} /> },
+        { label: 'Gallery',  path: '/admin/gallery',  icon: <Image      size={16} /> },
+        { label: 'Services', path: '/admin/services', icon: <Wrench     size={16} /> },
         { label: 'Team',     path: '/admin/team',     icon: <UserCircle size={16} /> },
         { label: 'FAQ',      path: '/admin/faq',      icon: <HelpCircle size={16} /> },
-        { label: 'Reviews',  path: '/admin/reviews',  icon: <Star     size={16} /> },
+        { label: 'Reviews',  path: '/admin/reviews',  icon: <Star       size={16} /> },
       ],
     },
     {
@@ -70,13 +70,13 @@ function useNavGroups() {
         { label: 'Reports', path: '/admin/reports', icon: <BarChart2 size={16} /> },
       ],
     },
-    {
+    ...(adminRole === 'super_admin' ? [{
       label: 'System',
       items: [
         { label: 'Users',    path: '/admin/users',    icon: <Shield   size={16} /> },
         { label: 'Settings', path: '/admin/settings', icon: <Settings size={16} /> },
       ],
-    },
+    }] : []),
   ];
   return groups;
 }
@@ -88,7 +88,7 @@ function AdminBreadcrumb() {
 
   const labels: Record<string, string> = {
     admin: 'Dashboard', bookings: 'Bookings', calendar: 'Calendar',
-    rooms: 'Rooms', pricing: 'Pricing', availability: 'Availability',
+    rooms: 'Rooms', pricing: 'Rates & Discount',
     guests: 'Guest CRM', blog: 'Blog', gallery: 'Gallery',
     services: 'Services', team: 'Team', faq: 'FAQ', reviews: 'Reviews',
     messages: 'Messages', reports: 'Reports', users: 'Users', settings: 'Settings',

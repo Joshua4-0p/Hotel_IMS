@@ -4,7 +4,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
-import { useAdminData } from '../../context/AdminDataContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -80,80 +79,6 @@ const codeSchema = z.object({
 });
 type CodeInput  = z.input<typeof codeSchema>;
 type CodeValues = z.output<typeof codeSchema>;
-
-// ── Room price editor ──────────────────────────────────────────────────────────
-function RoomPriceEditor() {
-  const { allRooms, updateRoom } = useAdminData();
-  const [editing, setEditing]   = useState<string | null>(null);
-  const [tempPrice, setTempPrice] = useState('');
-
-  function startEdit(roomId: string, currentPrice: number) {
-    setEditing(roomId);
-    setTempPrice(String(currentPrice));
-  }
-
-  function savePrice(roomId: string) {
-    const n = parseInt(tempPrice, 10);
-    if (!isNaN(n) && n > 0) updateRoom(roomId, { price: n });
-    setEditing(null);
-  }
-
-  return (
-    <div className="flex flex-col gap-2">
-      {allRooms.map((room) => (
-        <div key={room.id}
-          className="flex items-center justify-between gap-4 px-4 py-3 bg-white dark:bg-[#1e1e1e] border border-[#e5e7eb] dark:border-[#2e2e2e] rounded-button"
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            <img src={room.images[0]} alt={room.name}
-              className="w-10 h-8 object-cover rounded shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-[#111111] dark:text-white">{room.name}</p>
-              <p className="text-xs text-[#9ca3af]">{room.category} · {room.size}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            {editing === room.id ? (
-              <>
-                <Input
-                  type="number"
-                  value={tempPrice}
-                  onChange={(e) => setTempPrice(e.target.value)}
-                  className="h-8 w-36 text-xs font-mono"
-                  autoFocus
-                  onKeyDown={(e) => e.key === 'Enter' && savePrice(room.id)}
-                />
-                <Button size="sm" className="h-8 text-xs bg-brand-black text-white hover:bg-[#333333] dark:bg-white dark:text-[#111111]"
-                  onClick={() => savePrice(room.id)}
-                >
-                  Save
-                </Button>
-                <Button size="sm" variant="ghost" className="h-8 text-xs"
-                  onClick={() => setEditing(null)}
-                >
-                  Cancel
-                </Button>
-              </>
-            ) : (
-              <>
-                <span className="font-mono text-sm font-semibold text-[#111111] dark:text-white">
-                  {fmtXAF(room.price)}<span className="text-xs text-[#9ca3af] font-normal">/night</span>
-                </span>
-                <Button size="sm" variant="ghost"
-                  className="h-8 w-8 p-0 text-[#9ca3af] hover:text-[#111111] dark:hover:text-white"
-                  onClick={() => startEdit(room.id, room.price)}
-                >
-                  <Pencil size={13} />
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 // ── Seasonal Rates tab ─────────────────────────────────────────────────────────
 function SeasonalRatesTab({ rates, setRates }: {
@@ -487,34 +412,17 @@ export function AdminPricing() {
   return (
     <div className="p-6 max-w-350 mx-auto flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold text-[#111111] dark:text-white">Pricing & Rates</h1>
+        <h1 className="text-2xl font-bold text-[#111111] dark:text-white">Rates & Discount</h1>
         <p className="text-sm text-text-secondary dark:text-[#9ca3af] mt-0.5">
-          Manage base room prices, seasonal adjustments, and promo codes
+          Manage seasonal rate adjustments and promotional discount codes
         </p>
       </div>
 
-      <Tabs defaultValue="base" className="w-full">
+      <Tabs defaultValue="seasonal" className="w-full">
         <TabsList className="bg-[#f3f4f6] dark:bg-[#2a2a2a] h-9">
-          <TabsTrigger value="base"     className="text-xs">Base Prices</TabsTrigger>
           <TabsTrigger value="seasonal" className="text-xs">Seasonal Rates</TabsTrigger>
           <TabsTrigger value="codes"    className="text-xs">Discount Codes</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="base" className="mt-6">
-          <Card className="bg-white dark:bg-[#1e1e1e] border border-[#e5e7eb] dark:border-[#2e2e2e]"
-            style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}
-          >
-            <CardHeader className="px-5 pt-5 pb-4">
-              <CardTitle className="text-base font-semibold text-[#111111] dark:text-white">
-                Room Base Prices
-              </CardTitle>
-              <p className="text-xs text-[#9ca3af] mt-0.5">Click the pencil icon to edit any room's nightly rate</p>
-            </CardHeader>
-            <CardContent className="px-5 pb-5">
-              <RoomPriceEditor />
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="seasonal" className="mt-6">
           <Card className="bg-white dark:bg-[#1e1e1e] border border-[#e5e7eb] dark:border-[#2e2e2e]"

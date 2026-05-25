@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   TrendingUp, TrendingDown, BedDouble, CalendarDays, Users,
@@ -9,6 +9,7 @@ import {
 } from 'recharts';
 
 import { useAdminData } from '../../context/AdminDataContext';
+import { NewBookingDialog } from './AdminBookings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -338,6 +339,7 @@ function TodayPanel() {
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 export function AdminDashboard() {
   const { allBookings, allRooms, guests, messages } = useAdminData();
+  const [newBookingOpen, setNewBookingOpen] = useState(false);
 
   const confirmed  = allBookings.filter((b) => ['confirmed', 'checked_in', 'checked_out'].includes(b.status));
   const revenue    = confirmed.reduce((sum, b) => sum + b.totalPrice, 0);
@@ -361,12 +363,13 @@ export function AdminDashboard() {
             {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
-        <NavLink to="/admin/bookings">
-          <Button className="bg-[#141414] hover:bg-[#333333] text-white dark:bg-white dark:text-[#111111] dark:hover:bg-[#e5e7eb] h-9 gap-2">
-            <Plus size={15} />
-            New Booking
-          </Button>
-        </NavLink>
+        <Button
+          onClick={() => setNewBookingOpen(true)}
+          className="bg-brand-black hover:bg-[#333333] text-white dark:bg-white dark:text-[#111111] dark:hover:bg-[#e5e7eb] h-9 gap-2"
+        >
+          <Plus size={15} />
+          New Booking
+        </Button>
       </div>
 
       {/* Alerts — unread messages */}
@@ -422,6 +425,31 @@ export function AdminDashboard() {
         />
       </div>
 
+      {/* Quick action strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: 'All Bookings',  path: '/admin/bookings',  icon: <CalendarDays size={16} /> },
+          { label: 'Manage Rooms',  path: '/admin/rooms',     icon: <BedDouble    size={16} /> },
+          { label: 'View Guests',   path: '/admin/guests',    icon: <Users        size={16} /> },
+          { label: 'Messages',      path: '/admin/messages',  icon: <MessageSquare size={16} />, badge: unreadMsg },
+        ].map((action) => (
+          <NavLink
+            key={action.path}
+            to={action.path}
+            className="relative flex items-center gap-2.5 px-4 py-3 bg-white dark:bg-[#1e1e1e] border border-[#e5e7eb] dark:border-[#2e2e2e] rounded-card text-sm font-medium text-text-secondary dark:text-[#9ca3af] hover:text-[#111111] dark:hover:text-white hover:border-[#111111] dark:hover:border-[#555555] transition-colors"
+            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}
+          >
+            {action.icon}
+            {action.label}
+            {action.badge ? (
+              <span className="ml-auto text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full">
+                {action.badge}
+              </span>
+            ) : null}
+          </NavLink>
+        ))}
+      </div>
+
       {/* Occupancy chart + Today panel */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
@@ -443,7 +471,7 @@ export function AdminDashboard() {
               </CardTitle>
               <NavLink
                 to="/admin/bookings"
-                className="text-xs font-medium text-[#585858] dark:text-[#9ca3af] hover:text-[#111111] dark:hover:text-white transition-colors"
+                className="text-xs font-medium text-text-secondary dark:text-[#9ca3af] hover:text-[#111111] dark:hover:text-white transition-colors"
               >
                 View all →
               </NavLink>
@@ -470,10 +498,10 @@ export function AdminDashboard() {
                         <p className="font-medium text-sm text-[#111111] dark:text-white">{b.guestName}</p>
                         <p className="text-xs text-[#9ca3af]">{b.guestEmail}</p>
                       </TableCell>
-                      <TableCell className="px-4 py-3 hidden sm:table-cell text-sm text-[#585858] dark:text-[#9ca3af]">
+                      <TableCell className="px-4 py-3 hidden sm:table-cell text-sm text-text-secondary dark:text-[#9ca3af]">
                         {b.roomName}
                       </TableCell>
-                      <TableCell className="px-4 py-3 hidden md:table-cell text-xs text-[#585858] dark:text-[#9ca3af]">
+                      <TableCell className="px-4 py-3 hidden md:table-cell text-xs text-text-secondary dark:text-[#9ca3af]">
                         {fmtDate(b.checkIn)} → {fmtDate(b.checkOut)}
                       </TableCell>
                       <TableCell className="px-4 py-3 text-right font-mono text-xs font-medium text-[#111111] dark:text-white">
@@ -496,30 +524,7 @@ export function AdminDashboard() {
         <RoomStatusGrid />
       </div>
 
-      {/* Quick action strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: 'All Bookings',  path: '/admin/bookings',  icon: <CalendarDays size={16} /> },
-          { label: 'Manage Rooms',  path: '/admin/rooms',     icon: <BedDouble    size={16} /> },
-          { label: 'View Guests',   path: '/admin/guests',    icon: <Users        size={16} /> },
-          { label: 'Messages',      path: '/admin/messages',  icon: <MessageSquare size={16} />, badge: unreadMsg },
-        ].map((action) => (
-          <NavLink
-            key={action.path}
-            to={action.path}
-            className="relative flex items-center gap-2.5 px-4 py-3 bg-white dark:bg-[#1e1e1e] border border-[#e5e7eb] dark:border-[#2e2e2e] rounded-card text-sm font-medium text-[#585858] dark:text-[#9ca3af] hover:text-[#111111] dark:hover:text-white hover:border-[#111111] dark:hover:border-[#555555] transition-colors"
-            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}
-          >
-            {action.icon}
-            {action.label}
-            {action.badge ? (
-              <span className="ml-auto text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full">
-                {action.badge}
-              </span>
-            ) : null}
-          </NavLink>
-        ))}
-      </div>
+      <NewBookingDialog open={newBookingOpen} onClose={() => setNewBookingOpen(false)} />
     </div>
   );
 }

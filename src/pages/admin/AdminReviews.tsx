@@ -2,10 +2,11 @@ import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Pencil, Trash2, Star } from 'lucide-react';
+import { Plus, Trash2, Star, MessageSquare } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 
 import { reviews as SEED_REVIEWS, type Review } from '../../data/reviews';
+import { useAuth } from '../../context/AuthContext';
 import { DataTable } from '../../components/admin/DataTable';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -78,37 +79,33 @@ const addSchema = z.object({
 });
 type AddValues = z.infer<typeof addSchema>;
 
-const editSchema = z.object({
-  quote:    z.string().min(10, 'Review text required'),
-  status:   z.enum(['pending', 'approved', 'rejected']),
-  featured: z.boolean(),
-  reply:    z.string().optional(),
+const replySchema = z.object({
+  status: z.enum(['pending', 'approved', 'rejected']),
+  reply:  z.string().optional(),
 });
-type EditValues = z.infer<typeof editSchema>;
+type ReplyValues = z.infer<typeof replySchema>;
 
 const BLANK_ADD: AddValues = { name: '', location: '', rating: '5', quote: '' };
 
-// ── Edit Dialog ────────────────────────────────────────────────────────────────
-function EditDialog({
+// ── Reply Dialog ───────────────────────────────────────────────────────────────
+function ReplyDialog({
   open, review, onClose, onSave,
 }: {
   open: boolean;
   review: AdminReview | null;
   onClose: () => void;
-  onSave: (values: EditValues) => void;
+  onSave: (values: ReplyValues) => void;
 }) {
-  const form = useForm<EditValues>({
-    resolver: zodResolver(editSchema),
-    defaultValues: { quote: '', status: 'pending', featured: false, reply: '' },
+  const form = useForm<ReplyValues>({
+    resolver: zodResolver(replySchema),
+    defaultValues: { status: 'pending', reply: '' },
   });
 
   useEffect(() => {
-    form.reset(review ? {
-      quote:    review.quote,
-      status:   review.status,
-      featured: review.featured,
-      reply:    review.reply ?? '',
-    } : { quote: '', status: 'pending', featured: false, reply: '' });
+    form.reset(review
+      ? { status: review.status, reply: review.reply ?? '' }
+      : { status: 'pending', reply: '' },
+    );
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, review?.id]);
 
@@ -118,66 +115,53 @@ function EditDialog({
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg bg-white dark:bg-[#1e1e1e] border-[#e5e7eb] dark:border-[#2e2e2e]">
         <DialogHeader>
-          <DialogTitle className="text-[#111111] dark:text-white">Edit Review</DialogTitle>
+          <DialogTitle className="text-[#111111] dark:text-white">Review Details</DialogTitle>
         </DialogHeader>
-        {/* Read-only guest info */}
-        <div className="flex items-center gap-3 p-3 bg-[#f8f9fa] dark:bg-[#2a2a2a] rounded-button">
-          <div>
-            <p className="text-sm font-medium text-[#111111] dark:text-white">{review.name}</p>
-            <p className="text-xs text-[#9ca3af]">{review.location}</p>
+
+        {/* Read-only guest info + quote */}
+        <div className="p-3 bg-[#f8f9fa] dark:bg-[#2a2a2a] rounded-button flex flex-col gap-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <p className="text-sm font-medium text-[#111111] dark:text-white">{review.name}</p>
+              <p className="text-xs text-[#9ca3af]">{review.location}</p>
+            </div>
+            <StarRow rating={review.rating} />
           </div>
-          <StarRow rating={review.rating} />
+          <p className="text-xs text-text-secondary dark:text-[#9ca3af] italic">"{review.quote}"</p>
         </div>
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSave)} className="flex flex-col gap-4">
-            <FormField control={form.control} name="quote" render={({ field }) => (
+            <FormField control={form.control} name="status" render={({ field }) => (
               <FormItem>
-                <FormLabel>Review Text</FormLabel>
-                <FormControl><Textarea rows={3} {...field} /></FormControl>
+                <FormLabel>Status</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )} />
-            <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="status" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="approved">Approved</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="featured" render={({ field }) => (
-                <FormItem className="flex flex-col justify-end">
-                  <FormLabel>Featured</FormLabel>
-                  <div className="flex items-center gap-2 h-10">
-                    <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                    <span className="text-sm text-text-secondary dark:text-[#9ca3af]">
-                      {field.value ? 'Yes' : 'No'}
-                    </span>
-                  </div>
-                </FormItem>
-              )} />
-            </div>
+
             <FormField control={form.control} name="reply" render={({ field }) => (
               <FormItem>
                 <FormLabel>Hotel Reply <span className="text-[#9ca3af] font-normal">(optional)</span></FormLabel>
-                <FormControl><Textarea placeholder="Write a public reply to this review…" rows={2} {...field} value={field.value ?? ''} /></FormControl>
+                <FormControl>
+                  <Textarea placeholder="Write a public reply to this review…" rows={3} {...field} value={field.value ?? ''} />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )} />
+
             <DialogFooter className="gap-2 pt-2">
               <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
               <Button type="submit"
                 className="bg-brand-black hover:bg-[#333333] text-white dark:bg-white dark:text-[#111111] dark:hover:bg-[#e5e7eb]">
-                Save Changes
+                Save
               </Button>
             </DialogFooter>
           </form>
@@ -259,8 +243,11 @@ function AddDialog({
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export function AdminReviews() {
+  const { adminRole }                             = useAuth();
+  const canModerate = adminRole === 'super_admin' || adminRole === 'manager';
+
   const [reviews,       setReviews]       = useState<AdminReview[]>(loadReviews);
-  const [editReview,    setEditReview]     = useState<AdminReview | null>(null);
+  const [replyReview,   setReplyReview]   = useState<AdminReview | null>(null);
   const [addOpen,       setAddOpen]        = useState(false);
   const [deleteId,      setDeleteId]       = useState<string | null>(null);
   const [statusFilter,  setStatusFilter]   = useState<'all' | AdminReview['status']>('all');
@@ -283,12 +270,12 @@ export function AdminReviews() {
     setReviews((prev) => prev.map((r) => r.id === id ? { ...r, featured: !r.featured } : r));
   }
 
-  function handleEditSave(values: EditValues) {
-    if (!editReview) return;
+  function handleReplySave(values: ReplyValues) {
+    if (!replyReview) return;
     setReviews((prev) => prev.map((r) =>
-      r.id === editReview.id ? { ...r, ...values, reply: values.reply || undefined } : r,
+      r.id === replyReview.id ? { ...r, status: values.status, reply: values.reply || undefined } : r,
     ));
-    setEditReview(null);
+    setReplyReview(null);
   }
 
   function handleAddSave(values: AddValues) {
@@ -359,18 +346,22 @@ export function AdminReviews() {
       header: '',
       cell: ({ row }) => (
         <div className="flex items-center gap-1 justify-end">
-          <Button variant="ghost" size="sm"
-            className="h-7 w-7 p-0 text-[#9ca3af] hover:text-[#111111] dark:hover:text-white"
-            onClick={() => setEditReview(row.original)}
-            aria-label={`Edit review by ${row.original.name}`}>
-            <Pencil size={13} />
-          </Button>
-          <Button variant="ghost" size="sm"
-            className="h-7 w-7 p-0 text-[#9ca3af] hover:text-red-500"
-            onClick={() => setDeleteId(row.original.id)}
-            aria-label={`Delete review by ${row.original.name}`}>
-            <Trash2 size={13} />
-          </Button>
+          {canModerate && (
+            <>
+              <Button variant="ghost" size="sm"
+                className="h-7 w-7 p-0 text-[#9ca3af] hover:text-[#111111] dark:hover:text-white"
+                onClick={() => setReplyReview(row.original)}
+                aria-label={`Reply to review by ${row.original.name}`}>
+                <MessageSquare size={13} />
+              </Button>
+              <Button variant="ghost" size="sm"
+                className="h-7 w-7 p-0 text-[#9ca3af] hover:text-red-500"
+                onClick={() => setDeleteId(row.original.id)}
+                aria-label={`Delete review by ${row.original.name}`}>
+                <Trash2 size={13} />
+              </Button>
+            </>
+          )}
         </div>
       ),
     },
@@ -430,11 +421,11 @@ export function AdminReviews() {
         pageSize={10}
       />
 
-      <EditDialog
-        open={!!editReview}
-        review={editReview}
-        onClose={() => setEditReview(null)}
-        onSave={handleEditSave}
+      <ReplyDialog
+        open={!!replyReview}
+        review={replyReview}
+        onClose={() => setReplyReview(null)}
+        onSave={handleReplySave}
       />
 
       <AddDialog

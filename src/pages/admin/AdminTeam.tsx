@@ -24,6 +24,7 @@ interface AdminTeamMember extends TeamMember {
   order:      number;
   instagram?: string;
   linkedin?:  string;
+  website?:   string;
 }
 
 const TEAM_KEY = 'lodr_admin_team';
@@ -48,13 +49,14 @@ const teamSchema = z.object({
   image:     z.string().url('Valid image URL required'),
   instagram: z.string().optional(),
   linkedin:  z.string().optional(),
+  website:   z.string().optional(),
   visible:   z.boolean(),
 });
 type TeamFormValues = z.infer<typeof teamSchema>;
 
 const BLANK: TeamFormValues = {
   name: '', role: '', bio: '', image: '',
-  instagram: '', linkedin: '', visible: true,
+  instagram: '', linkedin: '', website: '', visible: true,
 };
 
 // ── Add/Edit Dialog ────────────────────────────────────────────────────────────
@@ -76,6 +78,7 @@ function TeamDialog({
       image:     member.image,
       instagram: member.instagram ?? '',
       linkedin:  member.linkedin  ?? '',
+      website:   member.website   ?? '',
       visible:   member.visible,
     } : BLANK);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -140,6 +143,13 @@ function TeamDialog({
                 </FormItem>
               )} />
             </div>
+            <FormField control={form.control} name="website" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Website <span className="text-[#9ca3af] font-normal">(optional)</span></FormLabel>
+                <FormControl><Input placeholder="https://example.com" {...field} value={field.value ?? ''} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
 
             <FormField control={form.control} name="visible" render={({ field }) => (
               <FormItem className="flex items-center gap-3">

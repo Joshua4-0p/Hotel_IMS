@@ -43,7 +43,7 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
 }
 
 // ── Status transition map ──────────────────────────────────────────────────────
-const TRANSITIONS: Record<string, { label: string; next: string; variant: 'default' | 'outline' | 'destructive' }[]> = {
+const TRANSITIONS: Record<string, { label: string; next: string; variant: 'default' | 'destructive' }[]> = {
   pending:    [
     { label: 'Confirm',    next: 'confirmed', variant: 'default'      },
     { label: 'Cancel',     next: 'cancelled', variant: 'destructive'  },
@@ -66,9 +66,10 @@ export function AdminBookingDetail() {
 
   const booking = allBookings.find((b) => b.id === id);
 
-  const [notes,        setNotes]       = useState(booking?.notes ?? '');
-  const [notesDirty,   setNotesDirty]  = useState(false);
-  const [deleteDialog, setDeleteDialog] = useState(false);
+  const [notes,           setNotes]          = useState(booking?.notes ?? '');
+  const [notesDirty,      setNotesDirty]     = useState(false);
+  const [deleteDialog,    setDeleteDialog]   = useState(false);
+  const [confirmTransition, setConfirmTransition] = useState<{ label: string; next: string; variant: 'default' | 'destructive' } | null>(null);
 
   if (!booking) {
     return (
@@ -88,8 +89,10 @@ export function AdminBookingDetail() {
   const cfg = STATUS_CONFIG[booking.status];
   const transitions = TRANSITIONS[booking.status] ?? [];
 
-  function handleStatusChange(next: string) {
-    updateAdminBooking(booking!.id, { status: next as AdminBooking['status'] });
+  function confirmAndChange() {
+    if (!confirmTransition) return;
+    updateAdminBooking(booking!.id, { status: confirmTransition.next as AdminBooking['status'] });
+    setConfirmTransition(null);
   }
 
   function handleSaveNotes() {
@@ -132,7 +135,7 @@ export function AdminBookingDetail() {
             Booking #{booking.id.toUpperCase()}
           </h1>
           <p className="text-sm text-text-secondary dark:text-[#9ca3af] mt-0.5">
-            Created {fmtDateTime(booking.bookedAt)} · via {booking.source === 'walk_in' ? 'Walk-in' : booking.source.charAt(0).toUpperCase() + booking.source.slice(1)}
+            Created {fmtDateTime(booking.bookedAt)}
           </p>
         </div>
         <span className={`ml-auto label px-3 py-1 rounded-full border text-xs ${cfg.className}`}>
@@ -149,7 +152,7 @@ export function AdminBookingDetail() {
               key={t.next}
               variant={t.variant}
               size="sm"
-              onClick={() => handleStatusChange(t.next)}
+              onClick={() => setConfirmTransition(t)}
               className={t.variant === 'default'
                 ? 'bg-brand-black hover:bg-[#333333] text-white dark:bg-white dark:text-[#111111] dark:hover:bg-[#e5e7eb]'
                 : ''}
@@ -289,7 +292,7 @@ export function AdminBookingDetail() {
                 </div>
                 <div className="flex justify-between">
                   <span>Source</span>
-                  <span className="capitalize">{booking.source === 'walk_in' ? 'Walk-in' : booking.source}</span>
+                  <span>{booking.source === 'walk_in' ? 'Walk-in (front desk)' : 'Online (by guest)'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Booking ID</span>
@@ -300,6 +303,43 @@ export function AdminBookingDetail() {
           </Card>
         </div>
       </div>
+
+      {/* Status transition confirmation */}
+      <Dialog open={!!confirmTransition} onOpenChange={(v) => !v && setConfirmTransition(null)}>
+        <DialogContent className="max-w-sm bg-white dark:bg-[#1e1e1e] border-[#e5e7eb] dark:border-[#2e2e2e]">
+          <DialogHeader>
+            <DialogTitle className="text-[#111111] dark:text-white">
+              Confirm: {confirmTransition?.label}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-text-secondary dark:text-[#9ca3af]">
+            {confirmTransition?.next === 'checked_in' && (
+              <>Check in <strong className="text-[#111111] dark:text-white">{booking.guestName}</strong> for <strong className="text-[#111111] dark:text-white">{booking.roomName}</strong>? The room will be marked as occupied.</>
+            )}
+            {confirmTransition?.next === 'checked_out' && (
+              <>Check out <strong className="text-[#111111] dark:text-white">{booking.guestName}</strong>? The room will be released and the guest may be prompted to leave a review.</>
+            )}
+            {confirmTransition?.next === 'cancelled' && (
+              <>Cancel booking <strong className="text-[#111111] dark:text-white">{booking.id.toUpperCase()}</strong> for <strong className="text-[#111111] dark:text-white">{booking.guestName}</strong>? This action cannot be undone.</>
+            )}
+            {confirmTransition?.next === 'confirmed' && (
+              <>Confirm booking <strong className="text-[#111111] dark:text-white">{booking.id.toUpperCase()}</strong> for <strong className="text-[#111111] dark:text-white">{booking.guestName}</strong>?</>
+            )}
+          </p>
+          <DialogFooter className="gap-2 mt-2">
+            <Button variant="outline" onClick={() => setConfirmTransition(null)}>Cancel</Button>
+            <Button
+              variant={confirmTransition?.variant === 'destructive' ? 'destructive' : 'default'}
+              className={confirmTransition?.variant !== 'destructive'
+                ? 'bg-brand-black hover:bg-[#333333] text-white dark:bg-white dark:text-[#111111] dark:hover:bg-[#e5e7eb]'
+                : ''}
+              onClick={confirmAndChange}
+            >
+              {confirmTransition?.label}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete confirmation */}
       <Dialog open={deleteDialog} onOpenChange={setDeleteDialog}>

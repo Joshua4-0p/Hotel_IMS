@@ -169,8 +169,8 @@ function AppRoutes() {
         { path: 'reviews',                element: <AdminReviews /> },
         { path: 'messages',               element: <AdminMessages /> },
         { path: 'reports',                element: <AdminReports /> },
-        { path: 'users',                  element: <AdminUsers /> },
-        { path: 'settings',               element: <AdminSettings /> },
+        { path: 'users',    element: <ProtectedAdminRoute roles={['super_admin']}><AdminUsers /></ProtectedAdminRoute> },
+        { path: 'settings', element: <ProtectedAdminRoute roles={['super_admin']}><AdminSettings /></ProtectedAdminRoute> },
       ],
     },
 

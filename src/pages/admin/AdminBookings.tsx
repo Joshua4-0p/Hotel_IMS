@@ -13,13 +13,13 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
-import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 const fmtXAF = (n: number) =>
@@ -40,10 +40,6 @@ const STATUS_LABELS: Record<string, string> = {
   checked_out: 'Checked Out', cancelled: 'Cancelled',
 };
 
-const SOURCE_LABELS: Record<string, string> = {
-  online: 'Online', walk_in: 'Walk-in', phone: 'Phone',
-};
-
 // ── New booking schema ─────────────────────────────────────────────────────────
 const bookingSchema = z.object({
   guestName:  z.string().min(2, 'Guest name is required'),
@@ -53,7 +49,6 @@ const bookingSchema = z.object({
   checkIn:    z.string().min(1, 'Check-in date required'),
   checkOut:   z.string().min(1, 'Check-out date required'),
   guests:     z.coerce.number().min(1).max(10),
-  source:     z.enum(['online', 'walk_in', 'phone']),
   notes:      z.string().optional(),
 }).refine((d) => d.checkOut > d.checkIn, {
   message: 'Check-out must be after check-in',
@@ -65,7 +60,7 @@ type BookingFormInput  = z.input<typeof bookingSchema>;
 type BookingFormValues = z.output<typeof bookingSchema>;
 
 // ── New Booking Dialog ─────────────────────────────────────────────────────────
-function NewBookingDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function NewBookingDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { allRooms, addAdminBooking } = useAdminData();
   const [submitting, setSubmitting]   = useState(false);
 
@@ -74,7 +69,7 @@ function NewBookingDialog({ open, onClose }: { open: boolean; onClose: () => voi
     defaultValues: {
       guestName: '', guestEmail: '', guestPhone: '',
       roomId: '', checkIn: '', checkOut: '',
-      guests: 1, source: 'online', notes: '',
+      guests: 1, notes: '',
     },
   });
 
@@ -104,7 +99,7 @@ function NewBookingDialog({ open, onClose }: { open: boolean; onClose: () => voi
       guests:     values.guests,
       totalPrice,
       status:     'confirmed',
-      source:     values.source,
+      source:     'walk_in',
       notes:      values.notes,
     });
     form.reset();
@@ -191,33 +186,15 @@ function NewBookingDialog({ open, onClose }: { open: boolean; onClose: () => voi
               )} />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="guests" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Guests</FormLabel>
-                  <FormControl>
-                    <Input type="number" min={1} max={10} {...field} value={field.value as number} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="source" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Source</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="online">Online</SelectItem>
-                      <SelectItem value="walk_in">Walk-in</SelectItem>
-                      <SelectItem value="phone">Phone</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )} />
-            </div>
+            <FormField control={form.control} name="guests" render={({ field }) => (
+              <FormItem className="max-w-40">
+                <FormLabel>Guests</FormLabel>
+                <FormControl>
+                  <Input type="number" min={1} max={10} {...field} value={field.value as number} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
 
             <FormField control={form.control} name="notes" render={({ field }) => (
               <FormItem>
@@ -294,7 +271,9 @@ function useColumns(onRowClick: (id: string) => void): ColumnDef<AdminBooking>[]
       accessorKey: 'source',
       header: 'Source',
       cell: ({ row }) => (
-        <span className="text-xs text-[#9ca3af]">{SOURCE_LABELS[row.original.source]}</span>
+        <span className="text-xs text-[#9ca3af]">
+          {row.original.source === 'walk_in' ? 'Walk-in' : 'Online'}
+        </span>
       ),
     },
     {
