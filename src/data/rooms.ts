@@ -1,7 +1,7 @@
 export interface Room {
   id: string;
   name: string;
-  category: 'Standard' | 'Deluxe' | 'Suite';
+  category: string;
   price: number;
   capacity: number;
   bedType: string;

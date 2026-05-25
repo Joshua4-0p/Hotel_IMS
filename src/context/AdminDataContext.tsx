@@ -145,6 +145,7 @@ interface AdminDataContextType {
 
   // Rooms
   allRooms: Room[];
+  addRoom: (room: Omit<Room, 'id'>) => void;
   updateRoom: (id: string, updates: Partial<Room>) => void;
 
   // Guests
@@ -218,6 +219,10 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
   }
 
   // ── Rooms ─────────────────────────────────────────────────────────────────
+  function addRoom(room: Omit<Room, 'id'>) {
+    const id = room.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Math.random().toString(36).slice(2, 6);
+    setAllRooms((prev) => [...prev, { ...room, id }]);
+  }
   function updateRoom(id: string, updates: Partial<Room>) {
     setAllRooms((prev) => prev.map((r) => (r.id === id ? { ...r, ...updates } : r)));
   }
@@ -258,7 +263,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     <AdminDataContext.Provider
       value={{
         allBookings, addAdminBooking, updateAdminBooking, deleteAdminBooking,
-        allRooms, updateRoom,
+        allRooms, addRoom, updateRoom,
         guests, addGuest, updateGuest,
         messages, markMessageRead, markMessageReplied,
         services: SEED_SERVICES,

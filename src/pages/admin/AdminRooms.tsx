@@ -4,12 +4,12 @@ import { type ColumnDef } from '@tanstack/react-table';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Pencil } from 'lucide-react';
+import { Pencil, Plus } from 'lucide-react';
 
 import { useAdminData } from '../../context/AdminDataContext';
 import type { Room } from '../../data/rooms';
-import { DataTable } from '../../components/admin/DataTable';
 import { Button } from '@/components/ui/button';
+import { DataTable } from '../../components/admin/DataTable';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
@@ -18,9 +18,21 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+
+const CATS_KEY = 'lodr_room_categories';
+function loadCategories(): string[] {
+  try {
+    const raw = localStorage.getItem(CATS_KEY);
+    return raw ? JSON.parse(raw) : ['Standard', 'Deluxe', 'Suite'];
+  } catch { return ['Standard', 'Deluxe', 'Suite']; }
+}
+function saveCategories(cats: string[]) {
+  localStorage.setItem(CATS_KEY, JSON.stringify(cats));
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 const fmtXAF = (n: number) =>
@@ -32,10 +44,214 @@ const CATEGORY_STYLES: Record<string, string> = {
   Suite:    'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400',
 };
 
-// ── Edit room schema ───────────────────────────────────────────────────────────
+// ── Schemas ────────────────────────────────────────────────────────────────────
 const roomSchema = z.object({
+  name:          z.string().min(2, 'Name is required'),
+  category:      z.string().min(1, 'Category is required'),
+  customCategory:z.string().optional(),
+  price:         z.coerce.number().min(1, 'Price is required'),
+  capacity:      z.coerce.number().min(1).max(20),
+  bedType:       z.string().min(1, 'Bed type is required'),
+  size:          z.string().min(1, 'Size is required'),
+  description:   z.string().min(10, 'Description is required'),
+  amenities:     z.string().min(1, 'Add at least one amenity'),
+  featured:      z.boolean(),
+  imageUrls:     z.string().min(1, 'At least one image URL is required'),
+});
+
+type RoomFormInput  = z.input<typeof roomSchema>;
+type RoomFormValues = z.output<typeof roomSchema>;
+
+const ADD_BLANK: RoomFormInput = {
+  name: '', category: 'Standard', customCategory: '',
+  price: 0, capacity: 2, bedType: '', size: '', description: '',
+  amenities: 'Wi-Fi, Air Conditioning', featured: false, imageUrls: '',
+};
+
+// ── Add Room Dialog ────────────────────────────────────────────────────────────
+function AddRoomDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { addRoom } = useAdminData();
+  const [categories, setCategories] = useState<string[]>(loadCategories);
+  const [submitting, setSubmitting] = useState(false);
+
+  const form = useForm<RoomFormInput, unknown, RoomFormValues>({
+    resolver: zodResolver(roomSchema),
+    defaultValues: ADD_BLANK,
+  });
+
+  const selectedCat = form.watch('category');
+
+  useMemo(() => {
+    if (open) form.reset(ADD_BLANK);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  async function onSubmit(values: RoomFormValues) {
+    setSubmitting(true);
+    let finalCat = values.category;
+    if (values.category === '__new__') {
+      finalCat = (values.customCategory ?? '').trim() || 'Custom';
+      if (!categories.includes(finalCat)) {
+        const updated = [...categories, finalCat];
+        setCategories(updated);
+        saveCategories(updated);
+      }
+    }
+    const images = values.imageUrls
+      .split('\n')
+      .map((u) => u.trim())
+      .filter(Boolean);
+    addRoom({
+      name:        values.name,
+      category:    finalCat,
+      price:       values.price,
+      capacity:    values.capacity,
+      bedType:     values.bedType,
+      size:        values.size,
+      description: values.description,
+      amenities:   values.amenities.split(',').map((a) => a.trim()).filter(Boolean),
+      images:      images.length ? images : ['https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=800'],
+    });
+    setSubmitting(false);
+    onClose();
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-lg bg-white dark:bg-[#1e1e1e] border-[#e5e7eb] dark:border-[#2e2e2e] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-[#111111] dark:text-white">Add New Room</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
+            <FormField control={form.control} name="name" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Room Name</FormLabel>
+                <FormControl><Input placeholder="e.g. Garden Suite" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="category" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      {categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                      <SelectItem value="__new__">+ Add new category</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="price" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Price / Night (XAF)</FormLabel>
+                  <FormControl>
+                    <Input type="number" min={0} {...field} value={field.value as number} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            </div>
+
+            {selectedCat === '__new__' && (
+              <FormField control={form.control} name="customCategory" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>New Category Name</FormLabel>
+                  <FormControl><Input placeholder="e.g. Villa, Bungalow" {...field} value={field.value ?? ''} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            )}
+
+            <div className="grid grid-cols-3 gap-4">
+              <FormField control={form.control} name="capacity" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Capacity</FormLabel>
+                  <FormControl>
+                    <Input type="number" min={1} {...field} value={field.value as number} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="bedType" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Bed Type</FormLabel>
+                  <FormControl><Input placeholder="King" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="size" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Size</FormLabel>
+                  <FormControl><Input placeholder="40 m²" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            </div>
+
+            <FormField control={form.control} name="amenities" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Amenities (comma-separated)</FormLabel>
+                <FormControl>
+                  <Input placeholder="Wi-Fi, Mini Bar, Air Conditioning" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="description" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl><Textarea rows={3} placeholder="Describe the room…" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="imageUrls" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Image URLs (one per line)</FormLabel>
+                <FormControl>
+                  <Textarea rows={3} placeholder="https://images.unsplash.com/…" {...field} />
+                </FormControl>
+                <p className="text-[10px] text-[#9ca3af]">Leave blank to use a default placeholder image.</p>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="featured" render={({ field }) => (
+              <FormItem className="flex items-center gap-3">
+                <FormControl>
+                  <Switch checked={field.value} onCheckedChange={field.onChange} />
+                </FormControl>
+                <FormLabel className="!mt-0 cursor-pointer">Featured on homepage</FormLabel>
+              </FormItem>
+            )} />
+
+            <DialogFooter className="gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>Cancel</Button>
+              <Button
+                type="submit"
+                disabled={submitting}
+                className="bg-brand-black hover:bg-[#333333] text-white dark:bg-white dark:text-[#111111] dark:hover:bg-[#e5e7eb]"
+              >
+                {submitting ? 'Adding…' : 'Add Room'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Edit Room Dialog ───────────────────────────────────────────────────────────
+const editRoomSchema = z.object({
   name:        z.string().min(2, 'Name is required'),
-  category:    z.enum(['Standard', 'Deluxe', 'Suite']),
+  category:    z.string().min(1, 'Category is required'),
   price:       z.coerce.number().min(1, 'Price is required'),
   capacity:    z.coerce.number().min(1).max(20),
   bedType:     z.string().min(1, 'Bed type is required'),
@@ -43,19 +259,23 @@ const roomSchema = z.object({
   description: z.string().min(10, 'Description is required'),
   amenities:   z.string().min(1, 'Add at least one amenity'),
 });
+type EditRoomInput  = z.input<typeof editRoomSchema>;
+type EditRoomValues = z.output<typeof editRoomSchema>;
 
-type RoomFormInput  = z.input<typeof roomSchema>;
-type RoomFormValues = z.output<typeof roomSchema>;
-
-// ── Edit Room Dialog ───────────────────────────────────────────────────────────
 function EditRoomDialog({
   room, onClose,
 }: { room: Room | null; onClose: () => void }) {
-  const { updateRoom } = useAdminData();
+  const { updateRoom, allRooms } = useAdminData();
   const [submitting, setSubmitting] = useState(false);
 
-  const form = useForm<RoomFormInput, unknown, RoomFormValues>({
-    resolver: zodResolver(roomSchema),
+  const categories = useMemo(() => {
+    const stored = loadCategories();
+    const fromRooms = allRooms.map((r) => r.category);
+    return [...new Set([...stored, ...fromRooms])];
+  }, [allRooms]);
+
+  const form = useForm<EditRoomInput, unknown, EditRoomValues>({
+    resolver: zodResolver(editRoomSchema),
     defaultValues: room ? {
       name:        room.name,
       category:    room.category,
@@ -71,7 +291,6 @@ function EditRoomDialog({
     },
   });
 
-  // Reset form when room changes
   useMemo(() => {
     if (room) {
       form.reset({
@@ -88,7 +307,7 @@ function EditRoomDialog({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room?.id]);
 
-  async function onSubmit(values: RoomFormValues) {
+  async function onSubmit(values: EditRoomValues) {
     if (!room) return;
     setSubmitting(true);
     updateRoom(room.id, {
@@ -107,7 +326,7 @@ function EditRoomDialog({
 
   return (
     <Dialog open={!!room} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg bg-white dark:bg-[#1e1e1e] border-[#e5e7eb] dark:border-[#2e2e2e]">
+      <DialogContent className="max-w-lg bg-white dark:bg-[#1e1e1e] border-[#e5e7eb] dark:border-[#2e2e2e] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-[#111111] dark:text-white">Edit Room</DialogTitle>
         </DialogHeader>
@@ -129,9 +348,7 @@ function EditRoomDialog({
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                     <SelectContent>
-                      <SelectItem value="Standard">Standard</SelectItem>
-                      <SelectItem value="Deluxe">Deluxe</SelectItem>
-                      <SelectItem value="Suite">Suite</SelectItem>
+                      {categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -311,6 +528,7 @@ export function AdminRooms() {
   const { allRooms, allBookings } = useAdminData();
   const navigate                  = useNavigate();
   const [editRoom, setEditRoom]   = useState<Room | null>(null);
+  const [addRoomOpen, setAddRoomOpen] = useState(false);
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -342,6 +560,12 @@ export function AdminRooms() {
             {allRooms.length} rooms · {occupied} occupied · {available} available
           </p>
         </div>
+        <Button
+          onClick={() => setAddRoomOpen(true)}
+          className="bg-brand-black hover:bg-[#333333] text-white dark:bg-white dark:text-[#111111] dark:hover:bg-[#e5e7eb] h-9 gap-2"
+        >
+          <Plus size={15} /> Add Room
+        </Button>
       </div>
 
       {/* Summary badges */}
@@ -369,6 +593,7 @@ export function AdminRooms() {
         pageSize={10}
       />
 
+      <AddRoomDialog open={addRoomOpen} onClose={() => setAddRoomOpen(false)} />
       <EditRoomDialog room={editRoom} onClose={() => setEditRoom(null)} />
     </div>
   );
