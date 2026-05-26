@@ -61,7 +61,7 @@ function useNavGroups() {
     {
       label: 'Communications',
       items: [
-        { label: 'Messages', path: '/admin/messages', icon: <MessageSquare size={16} />, badge: () => unreadMsgs },
+        { label: 'Chats', path: '/admin/messages', icon: <MessageSquare size={16} />, badge: () => unreadMsgs },
       ],
     },
     {
@@ -91,7 +91,7 @@ function AdminBreadcrumb() {
     rooms: 'Rooms', pricing: 'Rates & Discount',
     guests: 'Guest CRM', blog: 'Blog', gallery: 'Gallery',
     services: 'Services', team: 'Team', faq: 'FAQ', reviews: 'Reviews',
-    messages: 'Messages', reports: 'Reports', users: 'Users', settings: 'Settings',
+    messages: 'Chats', reports: 'Reports', users: 'Users', settings: 'Settings',
   };
 
   return (
