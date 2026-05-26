@@ -177,7 +177,7 @@ function SaleDialog({
                     <FormItem>
                       <FormLabel>Liters / Unit</FormLabel>
                       <FormControl>
-                        <Input type="number" min={1} placeholder="20" {...field} />
+                        <Input type="number" min={1} placeholder="20" {...field} value={field.value as string} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -190,7 +190,7 @@ function SaleDialog({
                     <FormItem>
                       <FormLabel>Price / Unit (XAF)</FormLabel>
                       <FormControl>
-                        <Input type="number" min={1} placeholder="750" {...field} />
+                        <Input type="number" min={1} placeholder="750" {...field} value={field.value as string} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -203,7 +203,7 @@ function SaleDialog({
                     <FormItem>
                       <FormLabel>Count</FormLabel>
                       <FormControl>
-                        <Input type="number" min={1} placeholder="1" {...field} />
+                        <Input type="number" min={1} placeholder="1" {...field} value={field.value as string} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
