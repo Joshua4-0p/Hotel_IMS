@@ -5,7 +5,7 @@ import {
   LayoutDashboard, CalendarDays, Calendar, BedDouble, Tag,
   Users, BookOpen, Image, Wrench, HelpCircle, Star,
   MessageSquare, BarChart2, Shield, Settings, LogOut,
-  Bell, Moon, Sun, Menu, X, ChevronRight, UserCircle,
+  Bell, Moon, Sun, Menu, X, ChevronRight, UserCircle, Droplets,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useAdminData } from '../../context/AdminDataContext';
@@ -29,9 +29,10 @@ function useNavGroups() {
     {
       label: 'Operations',
       items: [
-        { label: 'Dashboard', path: '/admin',          icon: <LayoutDashboard size={16} />, exact: true },
-        { label: 'Bookings',  path: '/admin/bookings', icon: <CalendarDays    size={16} /> },
-        { label: 'Calendar',  path: '/admin/calendar', icon: <Calendar        size={16} /> },
+        { label: 'Dashboard',    path: '/admin',                icon: <LayoutDashboard size={16} />, exact: true },
+        { label: 'Bookings',    path: '/admin/bookings',      icon: <CalendarDays    size={16} /> },
+        { label: 'Calendar',    path: '/admin/calendar',      icon: <Calendar        size={16} /> },
+        { label: 'Water Supply', path: '/admin/water-supply', icon: <Droplets        size={16} /> },
       ],
     },
     {
@@ -92,6 +93,7 @@ function AdminBreadcrumb() {
     guests: 'Guest CRM', blog: 'Blog', gallery: 'Gallery',
     services: 'Services', team: 'Team', faq: 'FAQ', reviews: 'Reviews',
     messages: 'Chats', reports: 'Reports', users: 'Users', settings: 'Settings',
+    'water-supply': 'Water Supply',
   };
 
   return (

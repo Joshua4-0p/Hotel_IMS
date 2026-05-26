@@ -49,6 +49,7 @@ import { AdminMessages } from './pages/admin/AdminMessages';
 import { AdminReports } from './pages/admin/AdminReports';
 import { AdminUsers } from './pages/admin/AdminUsers';
 import { AdminSettings } from './pages/admin/AdminSettings';
+import { AdminWaterSupply } from './pages/admin/AdminWaterSupply';
 import { ReviewPromptModal } from './components/ReviewPromptModal';
 
 const pageVariants = {
@@ -170,6 +171,7 @@ function AppRoutes() {
         { path: 'reviews',                element: <AdminReviews /> },
         { path: 'messages',               element: <AdminMessages /> },
         { path: 'reports',                element: <AdminReports /> },
+        { path: 'water-supply',           element: <AdminWaterSupply /> },
         { path: 'users',    element: <ProtectedAdminRoute roles={['super_admin']}><AdminUsers /></ProtectedAdminRoute> },
         { path: 'settings', element: <ProtectedAdminRoute roles={['super_admin']}><AdminSettings /></ProtectedAdminRoute> },
       ],

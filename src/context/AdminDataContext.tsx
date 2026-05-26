@@ -79,7 +79,31 @@ export interface HotelSettings {
   maxGuests: number;
 }
 
+export interface WaterSale {
+  id: string;
+  date: string;
+  clientName: string;
+  quantityPerUnit: number;
+  pricePerUnit: number;
+  count: number;
+  totalLiters: number;
+  totalAmount: number;
+}
+
 // ── Seed data ──────────────────────────────────────────────────────────────────
+const SEED_WATER_SALES: WaterSale[] = [
+  { id: 'ws_01', date: '2026-05-26', clientName: 'Supermarché Akwa',     quantityPerUnit: 20, pricePerUnit: 800, count: 10, totalLiters: 200, totalAmount: 8000  },
+  { id: 'ws_02', date: '2026-05-26', clientName: 'Restaurant La Belle',  quantityPerUnit: 20, pricePerUnit: 750, count: 5,  totalLiters: 100, totalAmount: 3750  },
+  { id: 'ws_03', date: '2026-05-25', clientName: 'École Sainte Marie',   quantityPerUnit: 20, pricePerUnit: 700, count: 8,  totalLiters: 160, totalAmount: 5600  },
+  { id: 'ws_04', date: '2026-05-25', clientName: 'Boulangerie du Wouri', quantityPerUnit: 20, pricePerUnit: 750, count: 4,  totalLiters: 80,  totalAmount: 3000  },
+  { id: 'ws_05', date: '2026-05-24', clientName: 'Supermarché Akwa',     quantityPerUnit: 20, pricePerUnit: 800, count: 12, totalLiters: 240, totalAmount: 9600  },
+  { id: 'ws_06', date: '2026-05-24', clientName: 'Clinique Saint-Luc',   quantityPerUnit: 20, pricePerUnit: 700, count: 6,  totalLiters: 120, totalAmount: 4200  },
+  { id: 'ws_07', date: '2026-05-20', clientName: 'Restaurant La Belle',  quantityPerUnit: 20, pricePerUnit: 750, count: 7,  totalLiters: 140, totalAmount: 5250  },
+  { id: 'ws_08', date: '2026-05-15', clientName: 'École Sainte Marie',   quantityPerUnit: 20, pricePerUnit: 700, count: 10, totalLiters: 200, totalAmount: 7000  },
+  { id: 'ws_09', date: '2026-05-15', clientName: 'Boulangerie du Wouri', quantityPerUnit: 20, pricePerUnit: 750, count: 6,  totalLiters: 120, totalAmount: 4500  },
+  { id: 'ws_10', date: '2026-05-10', clientName: 'Clinique Saint-Luc',   quantityPerUnit: 20, pricePerUnit: 700, count: 8,  totalLiters: 160, totalAmount: 5600  },
+  { id: 'ws_11', date: '2026-05-05', clientName: 'Supermarché Akwa',     quantityPerUnit: 20, pricePerUnit: 800, count: 15, totalLiters: 300, totalAmount: 12000 },
+];
 const SEED_BOOKINGS: AdminBooking[] = [
   { id: 'ab_01', roomId: 'serenity-suite',       roomName: 'Serenity Suite',       roomImage: 'https://images.unsplash.com/photo-1591088398332-8a7791972843?q=80&w=400', guestName: 'Amara Fotso',      guestEmail: 'amara.fotso@email.com',    guestPhone: '+237 655 001 001', checkIn: '2026-05-25', checkOut: '2026-05-28', guests: 2, totalPrice: 927000,  status: 'confirmed',   bookedAt: '2026-05-18T09:00:00', source: 'online' },
   { id: 'ab_02', roomId: 'terrace-room',          roomName: 'Terrace Room',          roomImage: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=400', guestName: 'Thierry Nkemdirim', guestEmail: 'thierry.nkem@email.com',   guestPhone: '+237 677 002 002', checkIn: '2026-05-24', checkOut: '2026-05-26', guests: 2, totalPrice: 390600,  status: 'confirmed',   bookedAt: '2026-05-17T14:30:00', source: 'online' },
@@ -175,6 +199,12 @@ interface AdminDataContextType {
   // Settings
   settings: HotelSettings;
   updateSettings: (updates: Partial<HotelSettings>) => void;
+
+  // Water sales
+  waterSales: WaterSale[];
+  addWaterSale: (s: Omit<WaterSale, 'id'>) => void;
+  updateWaterSale: (id: string, updates: Partial<WaterSale>) => void;
+  deleteWaterSale: (id: string) => void;
 }
 
 const STORAGE_KEY = 'lodr_admin_data_v1';
@@ -199,13 +229,14 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
   const [messages,      setMessages]      = useState<AdminMessage[]>(  (saved.messages      as AdminMessage[]  ) ?? SEED_MESSAGES);
   const [adminUsers,    setAdminUsers]    = useState<AdminUser[]>(     (saved.adminUsers    as AdminUser[]     ) ?? SEED_ADMIN_USERS);
   const [settings,      setSettings]      = useState<HotelSettings>(   (saved.settings      as HotelSettings   ) ?? SEED_SETTINGS);
+  const [waterSales,    setWaterSales]    = useState<WaterSale[]>(     (saved.waterSales    as WaterSale[]     ) ?? SEED_WATER_SALES);
 
   // Persist all mutable data to localStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      allBookings, allRooms, guests, messages, adminUsers, settings,
+      allBookings, allRooms, guests, messages, adminUsers, settings, waterSales,
     }));
-  }, [allBookings, allRooms, guests, messages, adminUsers, settings]);
+  }, [allBookings, allRooms, guests, messages, adminUsers, settings, waterSales]);
 
   // ── Bookings ──────────────────────────────────────────────────────────────
   function addAdminBooking(b: Omit<AdminBooking, 'id' | 'bookedAt'>) {
@@ -259,6 +290,17 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     setSettings((prev) => ({ ...prev, ...updates }));
   }
 
+  // ── Water sales ───────────────────────────────────────────────────────────
+  function addWaterSale(s: Omit<WaterSale, 'id'>) {
+    setWaterSales((prev) => [{ ...s, id: 'ws_' + Math.random().toString(36).slice(2, 9) }, ...prev]);
+  }
+  function updateWaterSale(id: string, updates: Partial<WaterSale>) {
+    setWaterSales((prev) => prev.map((s) => (s.id === id ? { ...s, ...updates } : s)));
+  }
+  function deleteWaterSale(id: string) {
+    setWaterSales((prev) => prev.filter((s) => s.id !== id));
+  }
+
   return (
     <AdminDataContext.Provider
       value={{
@@ -274,6 +316,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         reviews: SEED_REVIEWS,
         adminUsers, addAdminUser, updateAdminUser, removeAdminUser,
         settings, updateSettings,
+        waterSales, addWaterSale, updateWaterSale, deleteWaterSale,
       }}
     >
       {children}
