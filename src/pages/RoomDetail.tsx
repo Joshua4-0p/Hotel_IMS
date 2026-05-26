@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 const fmtXAF = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'XAF', maximumFractionDigits: 0 });
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -7,7 +7,7 @@ import type { SwiperClass } from 'swiper/react';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/thumbs';
-import { Users, BedDouble, Maximize2, Check, ChevronRight, Heart } from 'lucide-react';
+import { Users, BedDouble, Maximize2, Check, ChevronRight, Heart, Star, MessageSquare } from 'lucide-react';
 import { rooms } from '../data/rooms';
 import { Btn } from '../components/Btn';
 import { HoverImage } from '../components/HoverImage';
@@ -16,14 +16,138 @@ import { BookingPanel } from '../components/BookingPanel';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+
+// ── Shared review storage key (same as AdminReviews) ──────────────────────────
+const REVIEWS_KEY = 'lodr_admin_reviews';
+
+interface StoredReview {
+  id: string;
+  name: string;
+  location: string;
+  rating: number;
+  quote: string;
+  roomId?: string;
+  roomName?: string;
+  status: string;
+  featured: boolean;
+  reply?: string;
+  date: string;
+}
+
+function loadStoredReviews(): StoredReview[] {
+  try {
+    const raw = localStorage.getItem(REVIEWS_KEY);
+    return raw ? (JSON.parse(raw) as StoredReview[]) : [];
+  } catch { return []; }
+}
+
+// ── Star display (read-only) ──────────────────────────────────────────────────
+function StarDisplay({ rating, size = 14 }: { rating: number; size?: number }) {
+  return (
+    <span className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Star
+          key={i}
+          size={size}
+          fill={i <= rating ? 'currentColor' : 'none'}
+          className={i <= rating ? 'text-amber-400' : 'text-[#d1d5db]'}
+        />
+      ))}
+    </span>
+  );
+}
+
+// ── Interactive star input ─────────────────────────────────────────────────────
+function StarInput({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+  const [hover, setHover] = useState(0);
+  return (
+    <div className="flex items-center gap-1">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <button
+          key={i}
+          type="button"
+          onClick={() => onChange(i)}
+          onMouseEnter={() => setHover(i)}
+          onMouseLeave={() => setHover(0)}
+          className="transition-transform hover:scale-110"
+          aria-label={`Rate ${i} star${i > 1 ? 's' : ''}`}
+        >
+          <Star
+            size={28}
+            fill={i <= (hover || value) ? 'currentColor' : 'none'}
+            className={i <= (hover || value) ? 'text-amber-400' : 'text-[#d1d5db]'}
+          />
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export function RoomDetail() {
   const { id }                                                 = useParams<{ id: string }>();
   const room                                                   = rooms.find((r) => r.id === id);
   const [thumbsSwiper, setThumbsSwiper]                        = useState<SwiperClass | null>(null);
-  const { isAuthenticated, favorites, addToFavorites, removeFromFavorites } = useAuth();
+  const { isAuthenticated, user, favorites, bookings, addToFavorites, removeFromFavorites, markReviewed } = useAuth();
   const { toast }                                              = useToast();
   const navigate                                               = useNavigate();
+
+  // ── Reviews state ────────────────────────────────────────────────────────────
+  const [storedReviews, setStoredReviews] = useState<StoredReview[]>(() => loadStoredReviews());
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [reviewRating, setReviewRating]   = useState(0);
+  const [reviewText,   setReviewText]     = useState('');
+  const [submitting,   setSubmitting]     = useState(false);
+
+  const today = new Date().toISOString().split('T')[0];
+
+  const roomReviews = useMemo(
+    () => storedReviews.filter((r) => r.roomId === id && r.status === 'approved'),
+    [storedReviews, id],
+  );
+
+  const avgRating = roomReviews.length > 0
+    ? roomReviews.reduce((sum, r) => sum + r.rating, 0) / roomReviews.length
+    : 0;
+
+  const eligibleBooking = isAuthenticated
+    ? bookings.find(
+        (b) => b.roomId === id && b.status === 'confirmed' && b.checkOut <= today && !b.hasReviewed,
+      )
+    : undefined;
+
+  function handleReviewSubmit() {
+    if (!eligibleBooking || reviewRating === 0 || !room) return;
+    setSubmitting(true);
+
+    const newReview: StoredReview = {
+      id:       'grev_' + Math.random().toString(36).slice(2, 9),
+      name:     user?.name ?? 'Anonymous',
+      location: user?.location || 'Guest',
+      rating:   reviewRating,
+      quote:    reviewText.trim(),
+      roomId:   room.id,
+      roomName: room.name,
+      status:   'approved',
+      featured: false,
+      date:     today,
+    };
+
+    const existing = loadStoredReviews();
+    localStorage.setItem(REVIEWS_KEY, JSON.stringify([newReview, ...existing]));
+    setStoredReviews([newReview, ...existing]);
+    markReviewed(eligibleBooking.id);
+
+    setReviewRating(0);
+    setReviewText('');
+    setSubmitting(false);
+    setReviewDialogOpen(false);
+    toast('Thank you for your review!');
+  }
 
   if (!room) {
     return (
@@ -154,6 +278,79 @@ export function RoomDetail() {
                   ))}
                 </div>
               </RevealOnScroll>
+
+              {/* Guest Reviews */}
+              <RevealOnScroll>
+                <div className="flex flex-col gap-5">
+                  {/* Header */}
+                  <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <div className="flex items-center gap-3">
+                      <h2 className="heading-lg text-text-primary">Guest Reviews</h2>
+                      {roomReviews.length > 0 && (
+                        <div className="flex items-center gap-2">
+                          <StarDisplay rating={Math.round(avgRating)} size={15} />
+                          <span className="body-sm text-text-secondary">
+                            {avgRating.toFixed(1)} · {roomReviews.length} review{roomReviews.length !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {eligibleBooking && (
+                      <button
+                        type="button"
+                        onClick={() => setReviewDialogOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 rounded-[0.5rem] border border-[#E3E3E3] body-sm font-medium text-text-secondary hover:border-brand-black hover:text-brand-black transition-colors"
+                      >
+                        <MessageSquare size={14} />
+                        Leave a Review
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Review cards */}
+                  {roomReviews.length === 0 ? (
+                    <p className="body-md text-text-secondary py-4">
+                      No reviews yet for this room. Be the first to share your experience!
+                    </p>
+                  ) : (
+                    <div className="flex flex-col gap-4">
+                      {roomReviews.map((review) => (
+                        <div
+                          key={review.id}
+                          className="p-4 rounded-card border border-[#E3E3E3] bg-[#F8F8F8] flex flex-col gap-2"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-full bg-brand-black flex items-center justify-center shrink-0">
+                                <span className="text-[11px] font-semibold text-white">
+                                  {review.name.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                              <div>
+                                <p className="body-sm font-semibold text-[#111111]">{review.name}</p>
+                                <p className="text-[11px] text-[#9ca3af]">{review.location}</p>
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-0.5 shrink-0">
+                              <StarDisplay rating={review.rating} size={12} />
+                              <span className="text-[11px] text-[#9ca3af]">{review.date}</span>
+                            </div>
+                          </div>
+                          {review.quote && (
+                            <p className="body-sm text-text-secondary leading-relaxed">"{review.quote}"</p>
+                          )}
+                          {review.reply && (
+                            <div className="mt-1 pl-3 border-l-2 border-[#E3E3E3]">
+                              <p className="text-[11px] font-semibold text-text-secondary mb-0.5">Hotel reply</p>
+                              <p className="body-sm text-text-secondary">{review.reply}</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </RevealOnScroll>
             </div>
 
             {/* Booking panel */}
@@ -198,6 +395,44 @@ export function RoomDetail() {
           </div>
         </div>
       </section>
+
+      {/* Inline review dialog */}
+      <Dialog open={reviewDialogOpen} onOpenChange={(v) => { if (!v) { setReviewDialogOpen(false); setReviewRating(0); setReviewText(''); } }}>
+        <DialogContent className="max-w-md bg-white border-[#E3E3E3]">
+          <DialogHeader>
+            <DialogTitle className="text-[#111111]">Leave a Review</DialogTitle>
+            <p className="text-sm text-text-secondary mt-1">{room?.name}</p>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 py-1">
+            <div>
+              <p className="body-sm font-medium text-[#111111] mb-2">Your rating <span className="text-red-500">*</span></p>
+              <StarInput value={reviewRating} onChange={setReviewRating} />
+            </div>
+            <div>
+              <p className="body-sm font-medium text-[#111111] mb-2">Your experience <span className="text-text-secondary font-normal">(optional)</span></p>
+              <Textarea
+                placeholder="Tell other guests about your stay…"
+                rows={3}
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+                className="text-sm resize-none"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 pt-2">
+            <Button variant="outline" onClick={() => { setReviewDialogOpen(false); setReviewRating(0); setReviewText(''); }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleReviewSubmit}
+              disabled={reviewRating === 0 || submitting}
+              className="bg-brand-black hover:bg-[#333333] text-white"
+            >
+              Submit Review
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Related rooms */}
       <section className="section-py" style={{ background: '#F8F8F8' }}>

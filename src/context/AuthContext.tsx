@@ -23,6 +23,7 @@ export interface Booking {
   totalPrice: number;
   status: 'confirmed' | 'cancelled';
   bookedAt: string;
+  hasReviewed?: boolean;
 }
 
 export interface Notification {
@@ -63,6 +64,8 @@ interface AuthContextType {
   cancelBooking: (bookingId: string) => void;
   markNotificationRead: (id: string) => void;
   markAllRead: () => void;
+  markReviewed: (bookingId: string) => void;
+  addReviewNotification: (roomName: string) => void;
 }
 
 // ── Mock admin credentials ─────────────────────────────────────────────────────
@@ -233,6 +236,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   }
 
+  function markReviewed(bookingId: string) {
+    setBookings((prev) => prev.map((b) => b.id === bookingId ? { ...b, hasReviewed: true } : b));
+  }
+
+  function addReviewNotification(roomName: string) {
+    setNotifications((prev) => [
+      {
+        id: 'nrev_' + Math.random().toString(36).slice(2, 8),
+        message: `How was your stay at ${roomName}? Leave a review to help others.`,
+        read: false,
+        date: new Date().toISOString().split('T')[0],
+      },
+      ...prev,
+    ]);
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -243,6 +262,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         addToFavorites, removeFromFavorites,
         addBooking, cancelBooking,
         markNotificationRead, markAllRead,
+        markReviewed, addReviewNotification,
       }}
     >
       {children}

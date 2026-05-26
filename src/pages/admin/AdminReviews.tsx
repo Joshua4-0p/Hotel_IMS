@@ -30,9 +30,20 @@ interface AdminReview extends Review {
   featured: boolean;
   reply?: string;
   date: string;
+  roomId?: string;
+  roomName?: string;
 }
 
 const REVIEWS_KEY = 'lodr_admin_reviews';
+
+const SEED_ROOM_ASSIGNMENTS = [
+  { roomId: 'lodr-signature',        roomName: 'Lodr Signature' },
+  { roomId: 'serenity-suite',        roomName: 'Serenity Suite' },
+  { roomId: 'sunlight-terrace-villa', roomName: 'Sunlight Terrace Villa' },
+  { roomId: 'tropical-zen-retreat',  roomName: 'Tropical Zen Retreat' },
+  { roomId: 'terrace-room',          roomName: 'Terrace Room' },
+  { roomId: 'deluxe-room',           roomName: 'Deluxe Room' },
+];
 
 // ── Persistence ────────────────────────────────────────────────────────────────
 function loadReviews(): AdminReview[] {
@@ -46,6 +57,7 @@ function loadReviews(): AdminReview[] {
     status:   'approved' as const,
     featured: i < 3,
     date:     '2026-05-15',
+    ...(SEED_ROOM_ASSIGNMENTS[i] ?? {}),
   }));
 }
 function saveReviews(reviews: AdminReview[]) {
@@ -308,6 +320,15 @@ export function AdminReviews() {
       accessorKey: 'rating',
       header: 'Rating',
       cell: ({ row }) => <StarRow rating={row.original.rating} />,
+    },
+    {
+      accessorKey: 'roomName',
+      header: 'Room',
+      cell: ({ row }) => (
+        <span className="text-xs text-text-secondary dark:text-[#9ca3af]">
+          {row.original.roomName ?? '—'}
+        </span>
+      ),
     },
     {
       accessorKey: 'quote',

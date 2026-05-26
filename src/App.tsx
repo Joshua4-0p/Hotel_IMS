@@ -49,6 +49,7 @@ import { AdminMessages } from './pages/admin/AdminMessages';
 import { AdminReports } from './pages/admin/AdminReports';
 import { AdminUsers } from './pages/admin/AdminUsers';
 import { AdminSettings } from './pages/admin/AdminSettings';
+import { ReviewPromptModal } from './components/ReviewPromptModal';
 
 const pageVariants = {
   initial: { opacity: 0, y: 20 },
@@ -206,6 +207,7 @@ function AppShell() {
         <AppRoutes />
       </main>
       {showFooter && <Footer />}
+      <ReviewPromptModal />
     </div>
   );
 }
