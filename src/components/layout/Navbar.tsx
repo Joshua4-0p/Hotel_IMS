@@ -22,7 +22,18 @@ const authLinks = [
   { label: 'Contact',   to: '/contact-us'},
 ];
 
-const heroRoutes = ['/'];
+// Routes whose hero section has a dark overlay — navbar starts white, turns dark on scroll.
+// Prefix-based so parameterised paths (/blog/:slug, /rooms/:id, etc.) are covered.
+const DARK_HERO_PREFIXES = [
+  '/', '/about-us', '/rooms', '/our-team', '/our-services',
+  '/gallery', '/blog', '/contact-us', '/pricing', '/faq', '/reviews',
+];
+
+function hasDarkHero(pathname: string) {
+  return DARK_HERO_PREFIXES.some((p) =>
+    p === '/' ? pathname === '/' : pathname.startsWith(p),
+  );
+}
 
 // ─── Avatar dropdown ─────────────────────────────────────────────────────────
 function AvatarDropdown({ initials, unreadCount }: { initials: string; unreadCount: number }) {
@@ -114,8 +125,7 @@ export function Navbar() {
   const location                    = useLocation();
   const { isAuthenticated, user, unreadCount } = useAuth();
 
-  const isHero      = heroRoutes.includes(location.pathname);
-  const transparent = isHero && !scrolled;
+  const transparent = hasDarkHero(location.pathname) && !scrolled;
   const textColor   = transparent ? 'text-white' : 'text-[#141414]';
   const links       = isAuthenticated ? authLinks : publicLinks;
 
